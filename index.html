@@ -18,9 +18,9 @@
             padding: 0;
         }
 
-        #controls {
-            height: 20%;
-            padding: 10px;
+        .controls {
+            height: 15%;
+            padding: 5px;
         }
     </style>
     <script>
@@ -105,12 +105,12 @@
 <body>
     <div id="map"></div>
     <div class="controls" style="float:left;">
-        <textarea id="polygonInput" rows="4" cols="50" placeholder='Inserisci poligoni'></textarea>
+        <textarea id="polygonInput" rows="4" cols="50" placeholder='Add polygons. One by line'></textarea>
         <br>
         <button onclick="addPolygon()">Add Polygons</button>
     </div>
     <div class="controls">
-        <textarea id="pointInput" rows="4" cols="50" placeholder='Inserisci coordinate'></textarea>
+        <textarea id="pointInput" rows="4" cols="50" placeholder='Add lines as latitude,longitude. One by line'></textarea>
         <br>
         <button onclick="addPoints()">Add Points</button>
     </div>
