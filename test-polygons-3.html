@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Leaflet Map with Dynamic Polygons</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <style>
+        /* Stili per la mappa */
+        #map {
+            height: 80%;
+            width: 100%;
+        }
+
+        /* Assicurarsi che il body e l'html abbiano l'altezza e la larghezza del 100% */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        #controls {
+            height: 20%;
+            padding: 10px;
+        }
+    </style>
+    <script>
+        let map;
+
+        // Inizializzazione della mappa
+        function initMap() {
+            // Creare la mappa centrata sull'Italia
+            map = L.map('map').setView([41.8719, 12.5674], 5);
+
+            // Aggiungere un layer di tile alla mappa
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            document.getElementById('polygonInput').value = `POLYGON((16.53483785734516 38.79459515585769,19.56871031103599 38.31254274685524,19.568710311036 40.85807948120362,16.53483785734516 41.34803119841404,16.53483785734516 38.79459515585769))
+            POLYGON((13.54369133221138 36.52130173970455,16.53483785734516 36.1376398719511,16.53483785734516 38.79459515585769,13.54369133221139 39.18771697563789,13.54369133221138 36.52130173970455))`;
+
+            document.getElementById('pointInput').value = `37.242460,15.245186
+41.30859375,16.875`;
+
+        }
+
+        function convertPolygons(polygonString) {
+            // Split the input string by lines and filter out empty lines
+            const lines = polygonString.trim().split('\n').filter(line => line.trim() !== '');
+
+            // Function to parse a POLYGON string
+            function parsePolygon(polygonStr) {
+                // Remove the "POLYGON((" prefix and "))" suffix
+                const coordsStr = polygonStr.replace('POLYGON((', '').replace('))', '');
+
+                console.log(coordsStr);
+
+                // Split the coordinates string into an array of coordinate pairs
+                const coordsPairs = coordsStr.split(',');
+
+                // Map the coordinate pairs to an array of {lat, lng} objects
+                return coordsPairs.map(pair => {
+                    const [lng, lat] = pair.trim().split(' ').map(Number);
+                    return { lat: lat, lng: lng };
+                });
+            }
+
+        // Convert each line to a polygon array
+        return lines.map(line => parsePolygon(line));
+        }
+
+        function addPolygon() {
+            const input = document.getElementById('polygonInput').value;
+            if (!input) return;
+
+            const coordsArray = convertPolygons(input);
+            console.log(coordsArray);
+
+            const polygon = L.polygon(coordsArray, {
+                color: 'red',
+                fillOpacity: 0.35
+            }).addTo(map);
+        }
+
+        function addPoints() {
+            const input = document.getElementById('pointInput').value;
+            if (!input) return;
+
+            const lines = input.trim().split('\n').filter(line => line.trim() !== '');
+            console.log(lines);
+
+            const points = lines.map(pair => {
+                const [lat, lng] = pair.trim().split(',').map(Number);
+                return {lat: lat, lng: lng}
+            });
+
+            points.forEach(point => {
+                L.marker([point.lat, point.lng]).addTo(map);
+            });
+        }
+
+        window.onload = initMap;
+    </script>
+</head>
+<body>
+    <div id="map"></div>
+    <div class="controls" style="float:left;">
+        <textarea id="polygonInput" rows="4" cols="50" placeholder='Inserisci poligoni'></textarea>
+        <br>
+        <button onclick="addPolygon()">Add Polygons</button>
+    </div>
+    <div class="controls">
+        <textarea id="pointInput" rows="4" cols="50" placeholder='Inserisci coordinate'></textarea>
+        <br>
+        <button onclick="addPoints()">Add Points</button>
+    </div>
+</body>
+</html>
