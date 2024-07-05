@@ -25,9 +25,6 @@ POLYGON((13.54369133221138 36.52130173970455,16.53483785734516 36.1376398719511,
             const input = document.getElementById('polygonInput').value;
             if (!input) return;
 
-            //const convertedInput = convertPolygons(input);
-
-            //const coordsArray = JSON.parse(convertedInput);
             const coordsArray = convertPolygons(input);
             console.log(coordsArray);
 
@@ -110,14 +107,14 @@ POLYGON((13.54369133221138 36.52130173970455,16.53483785734516 36.1376398719511,
 <body>
     <div id="map"></div>
     <div class="controls" style="float:left;">
-        <textarea id="polygonInput" rows="4" cols="50" placeholder='Inserisci poligoni'></textarea>
+        <textarea id="polygonInput" rows="4" cols="50" placeholder='Add Polygons'></textarea>
         <br>
-        <button onclick="addPolygon()">Aggiungi Poligono</button>
+        <button onclick="addPolygon()">Add Polygons</button>
     </div>
     <div class="controls">
-        <textarea id="pointInput" rows="4" cols="50" placeholder='Inserisci coordinate'></textarea>
+        <textarea id="pointInput" rows="4" cols="50" placeholder='Add Points'></textarea>
         <br>
-        <button onclick="addPoints()">Aggiungi Linea</button>
+        <button onclick="addPoints()">Add Points</button>
     </div>
 </body>
 </html>
