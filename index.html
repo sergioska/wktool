@@ -58,7 +58,7 @@
                     polyline: false,
                     rectangle: false,
                     circle: false,
-                    marker: false
+                    marker: true
                 }
             });
             map.addControl(drawControl);
@@ -134,7 +134,7 @@
             });
 
             points.forEach(point => {
-                L.marker([point.lat, point.lng]).addTo(map);
+                L.marker([point.lat, point.lng]).addTo(drawnItems);
             });
         }
 
