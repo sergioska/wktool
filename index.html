@@ -3,7 +3,9 @@
 <head>
     <title>Leaflet Map with Dynamic Polygons</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <style>
         /* Stili per la mappa */
         #map {
@@ -25,6 +27,7 @@
     </style>
     <script>
         let map;
+        let drawnItems;
 
         // Inizializzazione della mappa
         function initMap() {
@@ -41,6 +44,42 @@
 
             document.getElementById('pointInput').value = `37.242460,15.245186
 41.30859375,16.875`;
+
+            drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            // Aggiungere i controlli di disegno alla mappa
+            const drawControl = new L.Control.Draw({
+                edit: {
+                    featureGroup: drawnItems
+                },
+                draw: {
+                    polygon: true,
+                    polyline: false,
+                    rectangle: false,
+                    circle: false,
+                    marker: false
+                }
+            });
+            map.addControl(drawControl);
+
+            // Gestire l'evento di creazione di un nuovo poligono
+            map.on(L.Draw.Event.CREATED, function (event) {
+                const layer = event.layer;
+                drawnItems.addLayer(layer);
+
+                // Ricavare le coordinate del poligono disegnato
+                const coordinates = layer.getLatLngs()[0].map(latlng => ({
+                    lat: latlng.lat,
+                    lng: latlng.lng
+                }));
+                console.log(JSON.stringify(coordinates));
+
+                // Mostrare le coordinate nell'area di testo
+                const wkt = convertToWKT(coordinates);
+                const polygonInputValue = document.getElementById('polygonInput').value;
+                document.getElementById('polygonInput').value = polygonInputValue + '\n' + wkt;
+            });
 
         }
 
@@ -79,7 +118,7 @@
             const polygon = L.polygon(coordsArray, {
                 color: 'red',
                 fillOpacity: 0.35
-            }).addTo(map);
+            }).addTo(drawnItems);
         }
 
         function addPoints() {
@@ -99,6 +138,16 @@
             });
         }
 
+        function cleanPolygon() {
+            document.getElementById('polygonInput').value = '';
+            drawnItems.clearLayers();
+        }
+
+        function convertToWKT(coordinates) {
+            const wktCoords = coordinates.map(coord => `${coord.lng} ${coord.lat}`).join(', ');
+            return `POLYGON((${wktCoords}))`;
+        }
+
         window.onload = initMap;
     </script>
 </head>
@@ -108,6 +157,7 @@
         <textarea id="polygonInput" rows="4" cols="50" placeholder='Add polygons. One by line'></textarea>
         <br>
         <button onclick="addPolygon()">Add Polygons</button>
+        <button onclick="cleanPolygon()">Reset</button>
     </div>
     <div class="controls">
         <textarea id="pointInput" rows="4" cols="50" placeholder='Add lines as latitude,longitude. One by line'></textarea>
