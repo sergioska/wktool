@@ -1,15 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Leaflet Map with Dynamic Polygons</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
     <style>
         /* Stili per la mappa */
         #map {
-            height: 80%;
+            height: 100vh;
             width: 100%;
         }
 
@@ -138,7 +143,7 @@
             });
         }
 
-        function cleanPolygon() {
+        function clearPolygons() {
             document.getElementById('polygonInput').value = '';
             drawnItems.clearLayers();
         }
@@ -152,17 +157,39 @@
     </script>
 </head>
 <body>
-    <div id="map"></div>
-    <div class="controls" style="float:left;">
-        <textarea id="polygonInput" rows="4" cols="50" placeholder='Add polygons. One by line'></textarea>
-        <br>
-        <button onclick="addPolygon()">Add Polygons</button>
-        <button onclick="cleanPolygon()">Reset</button>
-    </div>
-    <div class="controls">
-        <textarea id="pointInput" rows="4" cols="50" placeholder='Add lines as latitude,longitude. One by line'></textarea>
-        <br>
-        <button onclick="addPoints()">Add Points</button>
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+                <div class="sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <p>Polygons</p>
+                        <textarea id="polygonInput" class="form-control mb-3" rows="4" placeholder='Add polygons. One by line'></textarea>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <button onclick="addPolygon()" class="btn btn-primary">Add Polygons</button>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <br/>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <p>Points</p>
+                        <textarea id="pointInput" class="form-control mb-3" rows="4" placeholder='Add lines as latitude,longitude. One by line'></textarea>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <button onclick="addPoints()" class="btn btn-primary">Add Points</button>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <br/>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <button onclick="clearPolygons()" class="btn btn-danger">Reset</button>
+                    </ul>
+                </div>
+            </nav>
+            <main role="main" class="col-md-10">
+                <div id="map"></div>
+            </main>
+        </div>
     </div>
 </body>
 </html>
