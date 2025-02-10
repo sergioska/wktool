@@ -118,12 +118,16 @@
             if (!input) return;
 
             const coordsArray = convertPolygons(input);
+            console.log('---');
             console.log(coordsArray);
+            console.log('---');
 
             const polygon = L.polygon(coordsArray, {
                 color: 'red',
                 fillOpacity: 0.35
             }).addTo(drawnItems);
+
+            document.getElementById('geoJSONOutput').value = JSON.stringify(convertToGeoJSON(coordsArray), null, 2);
         }
 
         function addPoints() {
@@ -151,6 +155,22 @@
         function convertToWKT(coordinates) {
             const wktCoords = coordinates.map(coord => `${coord.lng} ${coord.lat}`).join(', ');
             return `POLYGON((${wktCoords}))`;
+        }
+
+        function convertToGeoJSON(coordinates) {
+            const geoJSON = {
+                type: "Feature",
+                geometry: {
+                    type: "Polygon",
+                    coordinates: [
+                        coordinates.map(coords => coords.map(coord => 
+                            [coord.lng, coord.lat])
+                        )
+                    ]
+                },
+                properties: {}
+            };
+            return geoJSON;
         }
 
         window.onload = initMap;
@@ -183,6 +203,13 @@
                     </ul>
                     <ul class="nav flex-column">
                         <button onclick="clearPolygons()" class="btn btn-danger">Reset</button>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <br/>
+                    </ul>
+                    <ul class="nav flex-column">
+                        <p>Points</p>
+                        <textarea id="geoJSONOutput" class="form-control mb-3" rows="4" placeholder='geoJSON format'></textarea>                    
                     </ul>
                 </div>
             </nav>
