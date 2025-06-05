@@ -88,48 +88,171 @@
 
         }
 
-        function convertPolygons(polygonString) {
-            // Split the input string by lines and filter out empty lines
-            const lines = polygonString.trim().split('\n').filter(line => line.trim() !== '');
-
-            // Function to parse a POLYGON string
-            function parsePolygon(polygonStr) {
-                // Remove the "POLYGON((" prefix and "))" suffix
-                const coordsStr = polygonStr.replace('POLYGON((', '').replace('))', '');
-
-                console.log(coordsStr);
-
-                // Split the coordinates string into an array of coordinate pairs
-                const coordsPairs = coordsStr.split(',');
-
-                // Map the coordinate pairs to an array of {lat, lng} objects
-                return coordsPairs.map(pair => {
-                    const [lng, lat] = pair.trim().split(' ').map(Number);
-                    return { lat: lat, lng: lng };
-                });
+        function parseWKT(wktStr) {
+            if (wktStr.startsWith('POLYGON')) {
+                // Extract coordinates from POLYGON format
+                const coordsStr = wktStr.replace(/^POLYGON\s*\(\(/, '').replace(/\)\)\s*$/, '');
+                return [parseCoordinates(coordsStr)]; // Return as array with single polygon
+            } 
+            else if (wktStr.startsWith('MULTIPOLYGON')) {
+                // For MULTIPOLYGON, we need to extract each polygon separately
+                const content = wktStr.replace(/^MULTIPOLYGON\s*\(/, '').replace(/\)\s*$/, '');
+                
+                // Split by ")),((", which should separate individual polygons
+                const polygonRegex = /\(\([^)]+\)\)/g;
+                const matches = content.match(polygonRegex);
+                
+                if (matches && matches.length > 0) {
+                    return matches.map(polygonStr => {
+                        // For each polygon, extract just the coordinate part
+                        const coordsStr = polygonStr.replace(/^\(\(/, '').replace(/\)\)$/, '');
+                        return parseCoordinates(coordsStr);
+                    });
+                } else {
+                    console.warn('Could not parse MULTIPOLYGON format:', wktStr);
+                    return [];
+                }
             }
+            else {
+                console.warn('Unsupported WKT type:', wktStr.split('(')[0]);
+                return []; // Return empty array for unsupported types
+            }
+        }
 
-        // Convert each line to a polygon array
-        return lines.map(line => parsePolygon(line));
+        function parseCoordinates(coordsStr) {
+            // Remove any remaining parentheses that might have been left
+            coordsStr = coordsStr.replace(/^\(+|\)+$/g, '');
+            
+            // Split the coordinates string into an array of coordinate pairs
+            const coordsPairs = coordsStr.split(',');
+            
+            // Map the coordinate pairs to an array of {lat, lng} objects
+            return coordsPairs.map(pair => {
+                // Remove any parentheses and trim whitespace
+                pair = pair.replace(/[\(\)]/g, '').trim();
+                
+                // Split using any whitespace as separator
+                const parts = pair.split(/\s+/);
+                
+                // Ensure we have exactly two parts
+                if (parts.length !== 2) {
+                    console.warn('Invalid coordinate pair:', pair);
+                    return { lat: null, lng: null };
+                }
+                
+                // Convert to numbers and validate
+                const lng = parseFloat(parts[0]);
+                const lat = parseFloat(parts[1]);
+                
+                // Check if values are valid numbers
+                if (isNaN(lng) || isNaN(lat)) {
+                    console.warn('Invalid coordinate values:', parts);
+                }
+                
+                return { lat: lat, lng: lng };
+            });
+        }
+
+        function convertPolygons(wktString) {
+            // Split the input string by lines and filter out empty lines
+            const lines = wktString.trim().split('\n').filter(line => line.trim() !== '');
+    
+            // Parse each WKT string based on its type
+            return lines.map(line => parseWKT(line.trim()));
         }
 
         function addPolygon() {
             const input = document.getElementById('polygonInput').value;
             if (!input) return;
 
-            const coordsArray = convertPolygons(input);
-            console.log('---');
-            console.log(coordsArray);
-            console.log('---');
+            // Clear existing shapes
+            drawnItems.clearLayers();
 
-            const polygon = L.polygon(coordsArray, {
-                color: 'red',
-                fillOpacity: 0.35
-            }).addTo(drawnItems);
+            const shapesArray = convertPolygons(input);
+            console.log('Parsed shapes:', shapesArray);
+            
+            // Create a bounds object to track all shapes
+            const bounds = L.latLngBounds();
+            
+            // Add all polygons to the map
+            shapesArray.forEach((polygonArray, index) => {
+                polygonArray.forEach(coords => {
+                    if (coords && coords.length > 0) {
+                        try {
+                            // Verify we have valid coordinates
+                            const validCoords = coords.filter(coord => 
+                                coord !== null && 
+                                coord.lat !== null && 
+                                coord.lng !== null && 
+                                !isNaN(coord.lat) && 
+                                !isNaN(coord.lng));
+                            
+                            if (validCoords.length > 2) { // Need at least 3 points for a polygon
+                                const polygon = L.polygon(validCoords, {
+                                    color: 'red',
+                                    fillOpacity: 0.35
+                                }).addTo(drawnItems);
+                                
+                                // Extend bounds to include this polygon
+                                bounds.extend(polygon.getBounds());
+                            } else {
+                                console.warn('Not enough valid coordinates for a polygon:', validCoords.length);
+                            }
+                        } catch (error) {
+                            console.error("Error creating polygon:", error, coords);
+                        }
+                    }
+                });
+            });
+            
+            document.getElementById('geoJSONOutput').value = JSON.stringify(convertToGeoJSON(shapesArray), null, 2);
+            
+            // Only fit bounds if we added shapes
+            if (!bounds.isValid()) return;
+            map.fitBounds(bounds);
+        }
 
-            document.getElementById('geoJSONOutput').value = JSON.stringify(convertToGeoJSON(coordsArray), null, 2);
-
-            map.fitBounds(polygon.getBounds());
+        function convertToGeoJSON(shapesArray) {
+            // For debugging
+            console.log("Converting to GeoJSON:", shapesArray);
+            
+            // Filter out invalid coordinates
+            const validShapes = shapesArray.map(polygonArray => 
+                polygonArray.filter(coords => 
+                    coords && coords.length > 0 && 
+                    coords.filter(coord => coord && coord.lat !== null && coord.lng !== null).length > 2
+                )
+            ).filter(array => array.length > 0);
+            
+            // If no valid shapes
+            if (validShapes.length === 0) {
+                return { type: "FeatureCollection", features: [] };
+            }
+            
+            // If it's a single polygon
+            if (validShapes.length === 1 && validShapes[0].length === 1) {
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "Polygon",
+                        coordinates: [validShapes[0][0].map(coord => [coord.lng, coord.lat])]
+                    },
+                    properties: {}
+                };
+            } 
+            // If it's a multipolygon
+            else {
+                return {
+                    type: "Feature",
+                    geometry: {
+                        type: "MultiPolygon",
+                        coordinates: validShapes.map(polygon => 
+                            polygon.map(ring => ring.map(coord => [coord.lng, coord.lat]))
+                        )
+                    },
+                    properties: {}
+                };
+            }
         }
 
         function addPoints() {
@@ -157,22 +280,6 @@
         function convertToWKT(coordinates) {
             const wktCoords = coordinates.map(coord => `${coord.lng} ${coord.lat}`).join(', ');
             return `POLYGON((${wktCoords}))`;
-        }
-
-        function convertToGeoJSON(coordinates) {
-            const geoJSON = {
-                type: "Feature",
-                geometry: {
-                    type: "Polygon",
-                    coordinates: [
-                        coordinates.map(coords => coords.map(coord => 
-                            [coord.lng, coord.lat])
-                        )
-                    ]
-                },
-                properties: {}
-            };
-            return geoJSON;
         }
 
         window.onload = initMap;
