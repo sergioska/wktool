@@ -128,6 +128,8 @@
             }).addTo(drawnItems);
 
             document.getElementById('geoJSONOutput').value = JSON.stringify(convertToGeoJSON(coordsArray), null, 2);
+
+            map.fitBounds(polygon.getBounds());
         }
 
         function addPoints() {
